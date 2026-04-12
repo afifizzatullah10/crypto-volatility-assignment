@@ -1,0 +1,20 @@
+kafka:
+  broker: "localhost:9092"
+  topic_raw: "ticks.raw"
+  topic_features: "ticks.features"
+
+pairs:
+  - "BTC-USD"
+
+coinbase:
+  ws_url: "wss://advanced-trade-api.coinbase.com"
+
+ingestor:
+  default_minutes: 15
+  reconnect_base_delay: 2     # seconds; doubled each attempt
+  reconnect_max_delay: 60     # cap for exponential backoff
+  output_dir: "data/raw"
+
+features:
+  window_seconds: 120          # rolling buffer kept in memory
+  emit_every_n_ticks: 1        # emit a feature row on every tick

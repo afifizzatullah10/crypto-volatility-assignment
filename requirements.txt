@@ -1,0 +1,26 @@
+# ── Core data / streaming ───────────────────────────────────────────────────
+confluent-kafka==2.4.0
+websocket-client==1.8.0
+pyyaml==6.0.1
+python-dotenv==1.0.1
+
+# ── Data processing ──────────────────────────────────────────────────────────
+pandas==2.2.2
+numpy==1.26.4
+pyarrow==15.0.2        # Parquet I/O — mlflow 2.13.0 requires pyarrow<16
+
+# ── ML & evaluation ──────────────────────────────────────────────────────────
+scikit-learn==1.4.2
+xgboost==2.0.3
+scipy==1.13.0
+
+# ── Experiment tracking ──────────────────────────────────────────────────────
+mlflow==2.13.0
+
+# ── Data quality / drift ─────────────────────────────────────────────────────
+evidently==0.4.30
+
+# ── Notebooks ────────────────────────────────────────────────────────────────
+jupyter==1.0.0
+matplotlib==3.8.4
+seaborn==0.13.2
