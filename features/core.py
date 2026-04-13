@@ -41,8 +41,8 @@ class TickBuffer:
         try:
             best_bid = float(tick.get("best_bid", 0) or 0)
             best_ask = float(tick.get("best_ask", 0) or 0)
-        best_bid_size = float(tick.get("best_bid_size") or tick.get("best_bid_quantity") or 0)
-        best_ask_size = float(tick.get("best_ask_size") or tick.get("best_ask_quantity") or 0)
+            best_bid_size = float(tick.get("best_bid_size") or tick.get("best_bid_quantity") or 0)
+            best_ask_size = float(tick.get("best_ask_size") or tick.get("best_ask_quantity") or 0)
         except (TypeError, ValueError):
             return None
 

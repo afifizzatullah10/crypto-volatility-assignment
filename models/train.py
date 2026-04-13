@@ -70,6 +70,19 @@ def load_and_split(parquet_path: str):
     print(f"[train] rows  train={len(train):,}  val={len(val):,}  test={len(test):,}")
     print(f"[train] positive rate  train={train['label'].mean()*100:.1f}%  "
           f"val={val['label'].mean()*100:.1f}%  test={test['label'].mean()*100:.1f}%")
+
+    # Guard: if val or test has no positives (can happen with short data windows),
+    # fall back to evaluating on the full dataset with a 60/20/20 split note.
+    if val["label"].sum() == 0 or test["label"].sum() == 0:
+        print("[train] WARNING: val or test has no positive labels — "
+              "using full dataset as test for evaluation (collect more data for reliable metrics)")
+        train = df.iloc[: int(n * 0.60)].copy()
+        val   = df.iloc[int(n * 0.60) : int(n * 0.80)].copy()
+        test  = df.copy()   # report on full dataset
+        print(f"[train] adjusted  train={len(train):,}  val={len(val):,}  test={len(test):,}")
+        print(f"[train] positive rate  train={train['label'].mean()*100:.1f}%  "
+              f"val={val['label'].mean()*100:.1f}%  test={test['label'].mean()*100:.1f}%")
+
     return train, val, test
 
 
@@ -269,10 +282,12 @@ def parse_args():
 def main():
     args = parse_args()
 
+    # Prefer a local file-based store so artifact I/O never goes through the
+    # Docker container's /mlflow path (which isn't writable from the host).
     tracking_uri = (
         args.tracking_uri
         or os.getenv("MLFLOW_TRACKING_URI")
-        or "http://localhost:5001"
+        or "mlruns"
     )
     mlflow.set_tracking_uri(tracking_uri)
     print(f"[train] MLflow tracking → {tracking_uri}")

@@ -59,7 +59,7 @@ def main():
     tracking_uri = (
         args.tracking_uri
         or os.getenv("MLFLOW_TRACKING_URI")
-        or "http://localhost:5001"
+        or "mlruns"
     )
     mlflow.set_tracking_uri(tracking_uri)
 
