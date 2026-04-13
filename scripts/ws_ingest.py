@@ -59,7 +59,7 @@ class Ingestor:
         return json.dumps({
             "type": "subscribe",
             "product_ids": [self.pair],
-            "channel": "ticker",
+            "channels": ["ticker"],
         })
 
     def on_open(self, ws):

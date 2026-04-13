@@ -7,7 +7,7 @@ pairs:
   - "BTC-USD"
 
 coinbase:
-  ws_url: "wss://advanced-trade-api.coinbase.com"
+  ws_url: "wss://ws-feed.exchange.coinbase.com"
 
 ingestor:
   default_minutes: 15

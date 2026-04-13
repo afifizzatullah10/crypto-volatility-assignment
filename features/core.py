@@ -41,8 +41,8 @@ class TickBuffer:
         try:
             best_bid = float(tick.get("best_bid", 0) or 0)
             best_ask = float(tick.get("best_ask", 0) or 0)
-            best_bid_size = float(tick.get("best_bid_quantity", 0) or 0)
-            best_ask_size = float(tick.get("best_ask_quantity", 0) or 0)
+        best_bid_size = float(tick.get("best_bid_size") or tick.get("best_bid_quantity") or 0)
+        best_ask_size = float(tick.get("best_ask_size") or tick.get("best_ask_quantity") or 0)
         except (TypeError, ValueError):
             return None
 
@@ -161,11 +161,18 @@ def normalise_tick(raw: dict) -> Optional[dict]:
     Convert a raw Coinbase WebSocket ticker event into a normalised dict
     with a float `time` field (Unix seconds). Returns None if the event
     is not a ticker update.
+
+    Handles three formats:
+    1. Coinbase Exchange (ws-feed.exchange.coinbase.com) — flat {"type":"ticker", ...}
+    2. Coinbase Advanced Trade envelope — {"events": [{"type":"update","tickers":[...]}]}
+    3. NDJSON lines with an added "ingested_at" field wrapping either of the above
     """
-    # Coinbase Advanced Trade WS wraps events in an outer envelope
-    events = raw.get("events", [])
-    if events:
-        for event in events:
+    # Unwrap NDJSON-enriched outer envelope (ingested_at added by ws_ingest.py)
+    inner = raw.get("events")
+
+    # Format 2: Advanced Trade envelope
+    if inner:
+        for event in inner:
             if event.get("type") == "update":
                 for ticker in event.get("tickers", []):
                     t = dict(ticker)
@@ -177,12 +184,13 @@ def normalise_tick(raw: dict) -> Optional[dict]:
                     return t
         return None
 
-    # Legacy / flat format
-    if raw.get("type") not in ("ticker", None):
-        return None
-    ts = parse_tick_time(raw)
-    if ts is None:
-        return None
-    tick = dict(raw)
-    tick["time"] = ts
-    return tick
+    # Format 1: Coinbase Exchange flat ticker
+    if raw.get("type") == "ticker":
+        ts = parse_tick_time(raw)
+        if ts is None:
+            return None
+        tick = dict(raw)
+        tick["time"] = ts
+        return tick
+
+    return None
