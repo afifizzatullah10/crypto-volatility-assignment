@@ -4,8 +4,11 @@
 # MLflow artifacts
 mlruns/
 
-# Raw and processed data
-data/
+# Raw and processed data (exclude large/sensitive files)
+data/raw/
+data/processed/
+# dashboard snapshot is committed so Vercel can serve it
+!dashboard/data/dashboard.json
 
 # Python cache
 __pycache__/

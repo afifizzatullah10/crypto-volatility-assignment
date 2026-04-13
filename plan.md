@@ -891,6 +891,145 @@ box-shadow: 6px 6px 0px #2B4CFF;
 
 ---
 
+## Milestone 5 — Static Deployment
+
+**Due:** Week 5 | **Goal:** Deploy `dashboard/` as a public static site on Vercel so the snapshot is always reachable without running a local server. No server-side code required — Vercel serves the pre-built HTML/CSS/JS and the committed `dashboard.json`.
+
+---
+
+### How It Works
+
+```
+GitHub repo (main branch)
+  └── dashboard/
+        ├── index.html
+        ├── style.css
+        ├── app.js
+        └── data/
+              └── dashboard.json   ← committed snapshot
+
+vercel.json (root)
+  └── "root": "dashboard"          ← Vercel serves this folder
+      "rewrites": [{ "/(.*)" → "/index.html" }]
+
+Vercel CDN
+  └── https://<project>.vercel.app  ← public URL
+```
+
+Every `git push` to `main` triggers a Vercel redeployment. To update the live data snapshot, regenerate `dashboard.json` and push it.
+
+---
+
+### Files to Create / Modify
+
+| File | Change |
+|---|---|
+| `vercel.json` | New — tells Vercel to root at `dashboard/` and rewrite all routes to `index.html` |
+| `.gitignore` | Change `data/` → `data/raw/` + `data/processed/` so `dashboard/data/dashboard.json` is committed |
+| `README.md` | Add **Deployment** section with snapshot update workflow and first-time Vercel setup |
+
+---
+
+### Step-by-Step
+
+#### Step 1 — `vercel.json` (root of repo)
+
+```json
+{
+  "version": 2,
+  "root": "dashboard",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/data/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=300, stale-while-revalidate=60" }]
+    }
+  ]
+}
+```
+
+- `"root": "dashboard"` — Vercel only serves files inside `dashboard/`
+- The rewrite rule ensures navigating to any path (e.g. `/`) serves `index.html`
+- The `Cache-Control` header on `/data/` lets browsers cache the snapshot for 5 minutes but revalidate in the background
+
+#### Step 2 — Fix `.gitignore`
+
+The old rule `data/` excluded every `data/` folder anywhere in the repo, including `dashboard/data/`. Split it to only exclude the large raw/processed files:
+
+```gitignore
+# Raw and processed data (gitignored — large files)
+data/raw/
+data/processed/
+# dashboard snapshot is committed so Vercel can serve it
+!dashboard/data/dashboard.json
+```
+
+#### Step 3 — Generate and commit the snapshot
+
+```bash
+# Regenerate dashboard.json from latest model + predictions
+python scripts/export_dashboard_json.py
+
+# Stage it (previously gitignored — now tracked)
+git add dashboard/data/dashboard.json
+git commit -m "chore: add initial dashboard snapshot for Vercel"
+git push
+```
+
+#### Step 4 — Connect Vercel (one-time)
+
+**Option A — CLI:**
+```bash
+npm install -g vercel
+vercel login
+vercel          # follow prompts; Vercel detects vercel.json automatically
+vercel --prod   # promote to production URL
+```
+
+**Option B — Web UI:**
+1. Go to [vercel.com/new](https://vercel.com/new) → Import your GitHub repo
+2. Under **Root Directory**, enter `dashboard` (or leave blank — `vercel.json` handles it)
+3. Framework Preset: **Other** (plain static)
+4. Click **Deploy**
+
+#### Step 5 — Updating the live snapshot
+
+Whenever you retrain or collect new data:
+
+```bash
+# 1. Retrain (if needed)
+python models/train.py
+
+# 2. Re-score
+python models/infer.py --output predictions_test.csv
+
+# 3. Regenerate snapshot
+python scripts/export_dashboard_json.py
+
+# 4. Push — Vercel redeploys in ~30 seconds
+git add dashboard/data/dashboard.json
+git commit -m "chore: refresh dashboard snapshot $(date -u +%Y-%m-%d)"
+git push
+```
+
+---
+
+### Verification Steps
+
+| Check | How to Verify |
+|---|---|
+| `vercel.json` present | `cat vercel.json` — contains `"root": "dashboard"` and rewrite rule |
+| Snapshot committed | `git ls-files dashboard/data/dashboard.json` — prints the path (not empty) |
+| Local preview | `npx vercel dev` in repo root → open `http://localhost:3000` — all panels load with real data |
+| Deployed URL works | Open `https://<project>.vercel.app` — KPI cards show real numbers, chart renders |
+| Snapshot age visible | Check `generated_at` field in the page source or network tab → `dashboard.json` response |
+| Cache header set | `curl -I https://<project>.vercel.app/data/dashboard.json` → `cache-control: public, max-age=300` |
+| Redeployment on push | Make a trivial change, `git push`, watch Vercel dashboard → new deployment completes in ~30s |
+
+---
+
 ## Cross-Cutting Reminders
 
 **Avoid data leakage — the #1 silent killer of ML projects:**
