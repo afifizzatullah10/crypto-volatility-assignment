@@ -24,3 +24,7 @@ evidently==0.4.30
 jupyter==1.0.0
 matplotlib==3.8.4
 seaborn==0.13.2
+
+# ── Dashboard (Week 4) ────────────────────────────────────────────────────────
+fastapi>=0.110.0
+uvicorn>=0.27.0

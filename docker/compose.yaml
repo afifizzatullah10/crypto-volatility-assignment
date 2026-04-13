@@ -37,5 +37,54 @@ services:
     volumes:
       - ./mlruns:/mlflow/artifacts
 
+  # Week 4 — FastAPI replay service (port 8000)
+  w4-api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.ingestor
+    container_name: w4-api
+    command: python scripts/run_w4_api.py --port 8000
+    ports:
+      - "8000:8000"
+    depends_on:
+      - kafka
+    environment:
+      MLFLOW_TRACKING_URI: mlruns
+    volumes:
+      - ../data:/app/data
+      - ../mlruns:/app/mlruns
+      - ../models:/app/models
+      - ../scripts:/app/scripts
+
+  # Week 4 — SSE dashboard server (port 8766)
+  dashboard-server:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.ingestor
+    container_name: dashboard-server
+    command: python scripts/dashboard_server.py --port 8766 --mode replay
+    ports:
+      - "8766:8766"
+    depends_on:
+      - kafka
+    environment:
+      MLFLOW_TRACKING_URI: mlruns
+    volumes:
+      - ../data:/app/data
+      - ../mlruns:/app/mlruns
+      - ../models:/app/models
+      - ../scripts:/app/scripts
+
+  # Week 4 — Static dashboard file server (port 8080)
+  dashboard-ui:
+    image: python:3.11-slim
+    container_name: dashboard-ui
+    command: python -m http.server 8080
+    working_dir: /app/dashboard
+    ports:
+      - "8080:8080"
+    volumes:
+      - ../dashboard:/app/dashboard
+
 volumes:
   kafka_data:
